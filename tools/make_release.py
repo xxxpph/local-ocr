@@ -26,7 +26,7 @@ EXCLUDE_PARTS = ("__pycache__", ".pyc")
 
 def build(version: str) -> Path:
     DIST_DIR.mkdir(exist_ok=True)
-    zip_name = f"OCR一键部署-v{version}-win64.zip"
+    zip_name = f"local-ocr-v{version}-win64.zip"
     zip_path = DIST_DIR / zip_name
 
     models_root = BASE_DIR / "models" / "onnx"

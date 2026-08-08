@@ -1,6 +1,6 @@
-# OCR 一键部署服务
+# local-ocr — OCR 一键部署服务
 
-Windows 本地一键部署的 OCR 识别服务。解压 → 双击 `install.bat` → 双击 `start.bat`，即可在浏览器里使用。
+Windows 本地一键部署的 OCR 识别服务。下载 → 双击 `install.bat` → 双击 `start.bat`，即可在浏览器里使用。图片数据全程在本机处理，不出本地。
 
 **技术栈**: PaddleOCR 3.7 + ONNX Runtime + FastAPI（用户环境无需安装 PaddlePaddle）
 
