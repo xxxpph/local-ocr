@@ -121,6 +121,18 @@ POST /ocr_base64
 **Q: 端口被占用？**
 start.bat 会自动探测并 +1，无需手动处理。
 
+## 📚 文档
+
+| 文档 | 内容 |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | 架构与设计（GPU 配方、并发模型、版本锁定） |
+| [docs/api.md](docs/api.md) | API 详细文档（参数/错误码/示例） |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | 故障排查手册（安装/启动/识别/性能） |
+| [docs/developer-guide.md](docs/developer-guide.md) | 开发者与维护者指南（模型/发布/测试） |
+| [docs/test_matrix.md](docs/test_matrix.md) | 测试矩阵与实测记录 |
+| [docs/M0_verification.md](docs/M0_verification.md) | 技术验证结论与关键坑记录 |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | 变更日志 |
+
 ## 📁 项目结构
 
 ```

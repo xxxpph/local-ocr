@@ -35,7 +35,27 @@
 | 用例 | 结果 |
 |---|---|
 | M0 技术验证 | ✅ 见 docs/M0_verification.md |
-| 全流程安装（install.bat） | ✅ GPU 版，自测 CUDA EP 通过 |
+| 全流程安装（install.bat） | ✅ GPU 版，自测 CUDA EP 通过（v1.0.1 后含 PowerShell 兼容修复） |
 | 启动（start.bat） | ✅ 端口 8866→8867 自动避让，浏览器自动打开 |
 | 网页/API | ✅ /health /ocr /ocr_base64，GPU 识别正确 |
 | 引擎兜底 | ✅ GPU 初始化失败自动降级 CPU（修复 walker 前实测） |
+| v5-mobile 本地模型目录 | ✅ 修复 Model name mismatch 后双档位均可用（GPU 57.5ms / 266ms 首次） |
+| 接口选模型 | ✅ /ocr 与 /ocr_base64 带 model_set 均生效，非法值 400 |
+| 并发并行 | ✅ 跨档并发总耗时≈max（真并行）；replicas=2 同档并行 |
+| 并发 smoke | ✅ 8 并发 + 双档混合全 200 |
+| 副本创建回退 | ✅ 逻辑实测（失败自动减半），真实 OOM 场景待低配机验证 |
+| 性能基准 | v6-medium 稳态 ~10ms / v5-mobile ~8ms（GPU）；CPU 0.78s / 0.35s |
+| CI 发布 | ✅ v1.0.0/v1.0.1 Release 构建成功，zip 资产 113.7MB |
+| PowerShell 环境兼容 | ✅ cp1252 模拟 + PS5.1 模拟均通过（修复后） |
+
+### 待外部环境验证
+
+| 环境 | 用例 |
+|---|---|
+| Win10 22H2 + 旧驱动 RTX | 驱动过旧提示 + CPU 降级 |
+| Intel / AMD 核显 | CPU 链路 |
+| 无 GPU VM | CPU 链路 |
+| 无 Python 机器 | 自动静默安装 Python 3.12 |
+| 断网安装 | 明确中文报错 + 日志路径 |
+| 杀软（360/Defender） | 无拦截或明确提示 |
+| 4GB 小显存显卡 | replicas>1 的 OOM 回退 |
