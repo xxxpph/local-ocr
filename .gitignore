@@ -16,3 +16,6 @@ gui-test-screenshots/
 # 生成物与会话产物
 detect_result.json
 .zcode/
+
+# 发布产物
+dist/

@@ -5,7 +5,7 @@
     python tools/make_release.py [--version 1.0.0]
 
 输出:
-    dist/OCR一键部署-v<版本>-win64.zip
+    dist/local-ocr-v<版本>-win64.zip
 
 内容:
     server/  scripts/  models/onnx/  requirements*.txt  README.md  LICENSE
