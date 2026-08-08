@@ -27,12 +27,22 @@ function Fail([string]$msg) {
 }
 
 function RunDetect([string]$python) {
+    # PS5.1 下 $ErrorActionPreference='Stop' 时 native 命令写 stderr 会抛
+    # NativeCommandError 直接中断流程（用户曾遇到），临时放开；
+    # 脚本异常时 stderr 内容会进 $out，由下方完整写入日志便于排查
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $out = & $python server\detect_env.py 2>&1 | Out-String
+    $ErrorActionPreference = $prevEap
     $kv = @{}
     foreach ($line in ($out -split "`r?`n")) {
         if ($line -match '^([A-Z_]+)=(.*)$') {
             $kv[$matches[1]] = $matches[2]
         }
+    }
+    if (-not $kv.PYTHON_FOUND) {
+        Log "检测脚本输出异常，原始输出如下（含可能的错误信息）:"
+        $out -split "`r?`n" | ForEach-Object { Log "  $_" }
     }
     return $kv
 }

@@ -17,6 +17,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+# 任意环境（含双击场景的 cmd/PowerShell 管道）下中文输出安全，
+# 避免 stdout 编码为 cp1252 等时 print 中文抛 UnicodeEncodeError
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RESULT_FILE = PROJECT_ROOT / "detect_result.json"
 
