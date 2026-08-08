@@ -22,21 +22,19 @@ jobs:
         shell: pwsh
         run: |
           python -c "import sys, pathlib; print('PY', sys.version.split()[0]); print('models_ok', pathlib.Path('models/onnx').is_dir())" 2>&1 | Tee-Object -FilePath diag.log
+          Get-ChildItem models\onnx -Recurse -Filter *.onnx | ForEach-Object { "$($_.Length) $($_.Name)" } | Tee-Object -FilePath diag.log -Append
           python tools/make_release.py --version ${{ github.ref_name }} 2>&1 | Tee-Object -FilePath diag.log -Append
           $rc = $LASTEXITCODE
-          Get-Content diag.log | ForEach-Object { Write-Host "::error::$_" }
-          if ($rc -ne 0) { Write-Host "PACK FAILED"; exit $rc }
+          if ($rc -ne 0) { Write-Host "PACK FAILED rc=$rc"; exit $rc }
 
       - name: 上传诊断日志
         if: failure()
         shell: pwsh
         run: |
-          git config user.name "ci-bot"
-          git config user.email "ci-bot@local"
-          git add diag.log
-          git commit -m "ci: diag log" --allow-empty 2>&1 | Out-Null
-          git push origin HEAD:diag 2>&1 | Out-Null
-          Write-Host "diag pushed to branch diag"
+          $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes('diag.log'))
+          $body = @{ message = 'ci: diag log'; content = $content; branch = 'diag' } | ConvertTo-Json
+          Invoke-RestMethod -Method Put -Uri 'https://api.github.com/repos/xxxpph/local-ocr/contents/diag.log' -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" } -Body $body -ContentType 'application/json' | Out-Null
+          Write-Host "diag pushed via API"
 
       - name: 上传 GitHub Release
         uses: softprops/action-gh-release@v2
