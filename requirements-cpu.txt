@@ -1,0 +1,3 @@
+# CPU 场景（无 NVIDIA GPU / 驱动不达标 / 未选择 GPU）
+-r requirements.txt
+onnxruntime==1.26.0

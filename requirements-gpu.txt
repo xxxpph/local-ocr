@@ -1,0 +1,12 @@
+# GPU 场景（NVIDIA + 驱动达标）。版本为 M0 实测锁定，勿随意升级：
+# - onnxruntime-gpu 1.26.0 内嵌 cudnn_frontend v1.12，cuDNN 9.2x 会致 Conv 图构建失败并静默回退 CPU
+# - 因此 nvidia-cudnn-cu12 必须 pin 9.11.x（社区与实测验证可用）
+-r requirements.txt
+onnxruntime-gpu==1.26.0
+nvidia-cudnn-cu12==9.11.1.4
+nvidia-cublas-cu12==12.9.2.10
+nvidia-cuda-runtime-cu12==12.9.79
+nvidia-cuda-nvrtc-cu12==12.9.86
+nvidia-cufft-cu12==11.4.1.4
+nvidia-curand-cu12==10.3.10.19
+nvidia-nvjitlink-cu12==12.9.86

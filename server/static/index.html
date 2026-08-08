@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR 识别工具</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f5f7fa; color: #2c3e50; min-height: 100vh;
+  }
+  .header {
+    background: #fff; padding: 16px 28px; display: flex;
+    align-items: center; justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .status { font-size: 13px; color: #7f8c8d; }
+  .status .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #95a5a6; margin-right: 6px; vertical-align: 1px;
+  }
+  .status .dot.ok { background: #27ae60; }
+  .status .dot.err { background: #e74c3c; }
+  .main { max-width: 1100px; margin: 24px auto; padding: 0 20px; }
+  .card {
+    background: #fff; border-radius: 10px; padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 20px;
+  }
+  .dropzone {
+    border: 2px dashed #bdc3c7; border-radius: 10px; padding: 48px 20px;
+    text-align: center; color: #7f8c8d; cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .dropzone.dragover { border-color: #3498db; background: #ecf5fd; }
+  .dropzone b { color: #3498db; }
+  .grid { display: flex; gap: 20px; flex-wrap: wrap; }
+  .grid .panel { flex: 1 1 460px; min-width: 0; }
+  .panel h3 { font-size: 15px; margin-bottom: 12px; color: #34495e; }
+  .imgbox { position: relative; border: 1px solid #ecf0f1; border-radius: 8px; overflow: hidden; }
+  .imgbox img, .imgbox canvas { display: block; max-width: 100%; }
+  .imgbox .placeholder {
+    height: 260px; display: flex; align-items: center; justify-content: center;
+    color: #bdc3c7; font-size: 14px;
+  }
+  .result-area { max-height: 400px; overflow-y: auto; }
+  .result-line {
+    padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;
+    background: #f8f9fa; font-size: 14px; display: flex;
+    justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .result-line .score { color: #95a5a6; font-size: 12px; flex-shrink: 0; }
+  .meta { font-size: 12px; color: #95a5a6; margin-top: 12px; }
+  .btn {
+    background: #3498db; color: #fff; border: none; border-radius: 6px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer;
+  }
+  .btn:hover { background: #2980b9; }
+  .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+  .empty { color: #bdc3c7; text-align: center; padding: 40px 0; }
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #2c3e50; color: #fff; padding: 10px 22px; border-radius: 6px;
+    font-size: 14px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 99;
+  }
+  .toast.show { opacity: 1; }
+  .model-tag {
+    display: inline-block; background: #ecf0f1; border-radius: 4px;
+    padding: 2px 8px; font-size: 12px; margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📄 OCR 识别工具</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">连接中…</span></div>
+</div>
+
+<div class="main">
+  <div class="card">
+    <div class="dropzone" id="dropzone">
+      点击选择图片，或将图片拖拽到此处<br>
+      <small>支持 PNG / JPG / BMP 等常见格式</small>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h3>图片预览</h3>
+      <div class="imgbox">
+        <div class="placeholder" id="placeholder">尚未选择图片</div>
+        <canvas id="canvas" hidden></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>识别结果
+        <select id="modelSelect" style="margin-left:8px;padding:4px 8px;border-radius:6px;border:1px solid #bdc3c7;font-size:13px">
+          <option value="v6-medium">更准 · v6-medium（默认）</option>
+          <option value="v5-mobile">更快 · v5-mobile</option>
+        </select>
+        <button class="btn" id="copyBtn" disabled style="float:right">复制全部</button>
+      </h3>
+      <div class="result-area" id="resultArea">
+        <div class="empty">识别结果将显示在这里</div>
+      </div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let currentBoxes = [];   // [{text, score, box}]
+let currentScale = 1;    // 画布坐标 -> 原图坐标
+let busy = false;
+
+// ---------- 健康检查 ----------
+async function refreshHealth() {
+  try {
+    const r = await fetch('/health');
+    const h = await r.json();
+    $('dot').className = 'dot ok';
+    const parts = [];
+    const sets = h.model_sets || {};
+    for (const [name, info] of Object.entries(sets)) {
+      const gpu = info.providers && info.providers.includes('CUDAExecutionProvider');
+      parts.push(`${name}: ${gpu ? 'GPU' : 'CPU'}`);
+      if (info.gpu_fail_reason) $('dot').className = 'dot err';
+    }
+    $('statusText').textContent = parts.join(' · ') || h.default_model_set;
+    if (h.gpu_fail_reason) {
+      $('statusText').textContent += '（GPU 不可用）';
+      $('dot').className = 'dot err';
+    }
+  } catch (e) {
+    $('dot').className = 'dot err';
+    $('statusText').textContent = '服务未连接';
+  }
+}
+refreshHealth();
+setInterval(refreshHealth, 30000);
+
+// ---------- 上传 ----------
+const dz = $('dropzone');
+dz.addEventListener('click', () => $('fileInput').click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+$('fileInput').addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  if (busy) return;
+  busy = true;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const img = new Image();
+    img.onload = async () => {
+      drawImage(img);
+      showToast('识别中…');
+      const NETWORK_ERR = '__NETWORK__';
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('model_set', $('modelSelect').value);
+        const t0 = performance.now();
+        let r;
+        try {
+          r = await fetch('/ocr', { method: 'POST', body: fd });
+        } catch (netErr) {
+          throw new Error(NETWORK_ERR);
+        }
+        let data = null;
+        try {
+          data = await r.json();
+        } catch (jsonErr) {
+          throw new Error(NETWORK_ERR);
+        }
+        if (!r.ok) {
+          throw new Error((data && data.detail) ? data.detail : ('服务返回错误 ' + r.status));
+        }
+        const dt = ((performance.now() - t0) / 1000).toFixed(2);
+        renderResult(data, dt);
+        drawBoxes(data.results || []);
+        showToast(`识别完成（${data.provider === 'CUDAExecutionProvider' ? 'GPU' : 'CPU'} · ${dt}s）`);
+      } catch (e) {
+        if (e.message === NETWORK_ERR) {
+          showToast('无法连接 OCR 服务，请确认服务已启动');
+          $('resultArea').innerHTML =
+            '<div class="empty">无法连接 OCR 服务<br>请确认 start.bat 窗口保持打开，然后重新上传</div>';
+        } else {
+          showToast('识别失败: ' + e.message);
+          $('resultArea').innerHTML =
+            '<div class="empty">识别失败：' + escapeHtml(e.message) + '<br><small>详细日志: 项目目录 logs/server.log</small></div>';
+        }
+      } finally {
+        busy = false;
+      }
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function drawImage(img) {
+  $('placeholder').style.display = 'none';
+  const canvas = $('canvas');
+  canvas.hidden = false;
+  const maxW = 900;
+  const scale = Math.min(1, maxW / img.width);
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  currentScale = 1 / scale;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+}
+
+function drawBoxes(results) {
+  const canvas = $('canvas');
+  if (canvas.hidden) return;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2;
+  ctx.fillStyle = 'rgba(39,174,96,0.85)';
+  ctx.font = '12px sans-serif';
+  for (const item of results) {
+    const pts = item.box.map(p => [p[0] / currentScale, p[1] / currentScale]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath(); ctx.stroke();
+    ctx.fillText(item.text.slice(0, 20), pts[0][0] + 2, pts[0][1] - 4);
+  }
+}
+
+function renderResult(data, seconds) {
+  const area = $('resultArea');
+  const lines = (data.results || []);
+  currentBoxes = lines;
+  if (!lines.length) {
+    area.innerHTML = '<div class="empty">未识别到文字</div>';
+  } else {
+    area.innerHTML = lines.map(item => `
+      <div class="result-line">
+        <span>${escapeHtml(item.text)}</span>
+        <span class="score">${(item.score * 100).toFixed(1)}%</span>
+      </div>`).join('');
+  }
+  $('meta').textContent =
+    `模型: ${data.model_set || '-'} · 引擎: ${data.provider === 'CUDAExecutionProvider' ? 'GPU (CUDA)' : 'CPU'} · 耗时: ${seconds}s · 共 ${lines.length} 行`;
+  $('copyBtn').disabled = !lines.length;
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+$('copyBtn').addEventListener('click', async () => {
+  const text = currentBoxes.map(b => b.text).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('已复制到剪贴板');
+  } catch {
+    showToast('复制失败，请手动选择文本');
+  }
+});
+
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

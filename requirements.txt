@@ -1,0 +1,7 @@
+# 公共依赖（不含 onnxruntime，由 install.bat 按检测结果追加 GPU/CPU 变体）
+# 注意: 不要在此处加入 paddle2onnx / paddlepaddle —— 用户环境不需要（见 docs/M0_verification.md）
+paddleocr==3.7.0
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+pillow>=10.0
