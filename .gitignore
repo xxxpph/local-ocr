@@ -3,9 +3,7 @@
 __pycache__/
 *.pyc
 
-# 发布包内置模型（体积大，随 GitHub Release 发布，不入库）
-models/onnx/
-
+# 模型已入库（官方预转 ONNX，克隆即用）；以下为运行期生成物
 # 本地配置与日志
 config.json
 logs/
