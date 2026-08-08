@@ -10,7 +10,12 @@ models/onnx/<set>/<模型目录>/{inference.onnx, inference.yml, inference.json}
 """
 import os
 import shutil
+import sys
 from pathlib import Path
+
+# 任意环境（含 CI）下中文输出安全
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path.home() / ".paddlex" / "official_models"

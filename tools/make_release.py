@@ -12,8 +12,13 @@
 """
 import argparse
 import shutil
+import sys
 import zipfile
 from pathlib import Path
+
+# CI 等环境默认 stdout 可能是 cp1252/GBK，中文 print 会崩（UnicodeEncodeError）
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DIST_DIR = BASE_DIR / "dist"
