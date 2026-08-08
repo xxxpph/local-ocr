@@ -29,10 +29,14 @@ jobs:
 
       - name: 上传诊断日志
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: diag
-          path: diag.log
+        shell: pwsh
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@local"
+          git add diag.log
+          git commit -m "ci: diag log" --allow-empty 2>&1 | Out-Null
+          git push origin HEAD:diag 2>&1 | Out-Null
+          Write-Host "diag pushed to branch diag"
 
       - name: 上传 GitHub Release
         uses: softprops/action-gh-release@v2
