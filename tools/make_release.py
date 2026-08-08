@@ -26,6 +26,8 @@ EXCLUDE_PARTS = ("__pycache__", ".pyc")
 
 def build(version: str) -> Path:
     DIST_DIR.mkdir(exist_ok=True)
+    # tag 名可能带 v 前缀（如 v1.0.0），zip 名里避免双 v
+    version = version.lstrip("v")
     zip_name = f"local-ocr-v{version}-win64.zip"
     zip_path = DIST_DIR / zip_name
 

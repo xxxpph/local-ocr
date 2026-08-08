@@ -14,6 +14,10 @@ jobs:
 
       # 模型已直接入库（models/onnx/），无需联网下载
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: 打发布包
         run: python tools/make_release.py --version ${{ github.ref_name }}
 
