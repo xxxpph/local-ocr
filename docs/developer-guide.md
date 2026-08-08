@@ -102,9 +102,3 @@ python -m venv .venv
 | python 中文 print | cp1252/GBK 环境 UnicodeEncodeError | 脚本开头 reconfigure utf-8 |
 | PaddleX 校验模型名 | v5 档 Model name mismatch | 本地模式同时传 model_name + model_dir |
 | ORT session 遍历 | pydantic mock 抛 PydanticUserError / 字典迭代中修改 | try/except + 快照迭代 |
-
-## 8. 与源开发仓库的关系
-
-`D:\project\ai\ocr`（开发仓库）与 `local-ocr`（发布仓库）为双份代码：
-- 改动先在开发仓库验证，再同步到 local-ocr 提交发布
-- 同步范围：server/、scripts/、tools/、docs/、README（不含模型/生成物）
