@@ -12,22 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: 安装 paddleocr（用于下载官方 ONNX 模型）
-        run: |
-          pip install --quiet paddleocr==3.7.0
-          pip install --quiet onnxruntime==1.26.0
-
-      - name: 下载官方预转 ONNX 模型（v6-medium + v5-mobile）
-        run: |
-          python -c "from paddleocr import PaddleOCR; PaddleOCR(engine='onnxruntime')"
-          python -c "from paddleocr import PaddleOCR; PaddleOCR(engine='onnxruntime', text_detection_model_name='PP-OCRv5_mobile_det', text_recognition_model_name='PP-OCRv5_mobile_rec')"
-
-      - name: 收集模型到发布目录
-        run: python tools/collect_models.py
+      # 模型已直接入库（models/onnx/），无需联网下载
 
       - name: 打发布包
         run: python tools/make_release.py --version ${{ github.ref_name }}
