@@ -19,7 +19,18 @@ jobs:
           python-version: "3.12"
 
       - name: 打发布包
-        run: python tools/make_release.py --version ${{ github.ref_name }}
+        shell: pwsh
+        run: |
+          python -c "import sys, pathlib; print('PY', sys.version.split()[0]); print('models_ok', pathlib.Path('models/onnx').is_dir())" 2>&1 | Tee-Object -FilePath diag.log
+          python tools/make_release.py --version ${{ github.ref_name }} 2>&1 | Tee-Object -FilePath diag.log -Append
+          if ($LASTEXITCODE -ne 0) { Write-Host "PACK FAILED"; exit $LASTEXITCODE }
+
+      - name: 上传诊断日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag
+          path: diag.log
 
       - name: 上传 GitHub Release
         uses: softprops/action-gh-release@v2
